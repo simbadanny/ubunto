@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>CRUD de Clientes</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+     <link rel="stylesheet" href="css/estilo.css">
+</head>
+
+<body>
+  <div class="container">
+  <div class="row">
+      <div class="col-2"></div> <!-- Columna vacía -->
+      <div class="col-8">
+          <h1 class="mt-5">Ingrese Cliente</h1>
+          <form id="crud-form">
+              <div class="form-group">
+                  <label for="nombre">Nombre del Cliente:</label>
+                  <input type="text" class="form-control" id="nombre" required>
+              </div>
+              <div class="form-group">
+                  <label for="apellido">Apellido del Cliente:</label>
+                  <input type="text" class="form-control" id="apellido" required>
+              </div>
+              <div class="form-group">
+                  <label for="edad">Edad del Cliente:</label>
+                  <input type="number" class="form-control" id="edad" required min="0">
+              </div>
+              <div class="form-group">
+                  <label for="cedula">Cedula del Cliente:</label>
+                  <input type="text" class="form-control" id="cedula" required pattern="[0-9]{9}">
+              </div>
+              <div class="form-group">
+                  <label for="correo">Correo del Cliente:</label>
+                  <input type="email" class="form-control" id="correo" required>
+              </div>
+              <br>
+              <input type="hidden" id="recordKey"> <!-- Hidden input to store the key of the current record -->
+              <button type="button" class="btn btn-primary" onclick="crearOActualizarRegistro()">Guardar</button>
+              <button type="button" class="btn btn-danger" onclick="limpiarFormulario()">Cancelar</button>
+          </form>
+      </div>
+      <div class="col-2"></div> <!-- Columna vacía -->
+  </div>
+</div>
+
+     <div class="container">
+         <div class="row">
+             <div class="col-1"></div> <!-- Columna vacía -->
+             <div class="col-10">
+                 <table class="table table-success table-striped">
+                     <thead>
+                         <tr>
+                             <th>Nombre</th>
+                             <th>Apellido</th>
+                             <th>Edad</th>
+                             <th>Cedula</th>
+                             <th>Correo</th>
+                             <th>Acciones</th>
+                         </tr>
+                     </thead>
+                     <tbody id="table-body">
+                         <!-- Registros se mostrarán aquí -->
+                     </tbody>
+                 </table>
+             </div>
+             <div class="col-1"></div> <!-- Columna vacía -->
+         </div>
+     </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, push, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // Configuración de Firebase
+        const firebaseConfig = {
+          apiKey: "AIzaSyAxM9W8bM6QT-HrFrGk_-tNpD3BZ8Uymqc",
+          authDomain: "danny1-407014.firebaseapp.com",
+          databaseURL: "https://danny1-407014-default-rtdb.firebaseio.com",
+          projectId: "danny1-407014",
+          storageBucket: "danny1-407014.appspot.com",
+          messagingSenderId: "978892435968",
+          appId: "1:978892435968:web:6ffdfe2adab3ae25399ee5",
+          measurementId: "G-YGMMZ84XK3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Variables del formulario
+        const nombreInput = document.getElementById("nombre");
+        const apellidoInput = document.getElementById("apellido");
+        const edadInput = document.getElementById("edad");
+        const cedulaInput = document.getElementById("cedula");
+        const correoInput = document.getElementById("correo");
+        const recordKeyInput = document.getElementById("recordKey");
+
+        window.crearOActualizarRegistro = function () {
+            const nombre = nombreInput.value;
+            const apellido = apellidoInput.value;
+            const edad = edadInput.value;
+            const cedula = cedulaInput.value;
+            const correo = correoInput.value;
+            const recordKey = recordKeyInput.value;
+
+            if (validarFormulario()) {
+                if (recordKey) {
+                    // Si recordKey está presente, actualiza el registro existente
+                    actualizarRegistro(recordKey);
+                } else {
+                    // Si recordKey no está presente, crea un nuevo registro
+                    crearRegistro();
+                }
+            }
+        }
+
+        function validarFormulario() {
+            if (!nombreInput.value) {
+                alert("Por favor ingrese el nombre del cliente");
+                return false;
+            }
+
+            if (!apellidoInput.value) {
+                alert("Por favor ingrese el apellido del cliente");
+                return false;
+            }
+
+            if (!edadInput.value) {
+                alert("Por favor ingrese la edad del cliente");
+                return false;
+            }
+
+            if (edadInput.value < 0) {
+                alert("La edad debe ser un número positivo");
+                return false;
+            }
+
+            if (!cedulaInput.value) {
+                alert("Por favor ingrese la cédula del cliente");
+                return false;
+            }
+
+            if (!/^(\d{9})$/.test(cedulaInput.value)) {
+                alert("La cédula debe contener exactamente 9 dígitos numéricos");
+                return false;
+            }
+
+            if (!correoInput.value) {
+                 alert("Por favor ingrese el correo del cliente");
+                 return false;
+             }
+
+             if (!/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(correoInput.value)) {
+                 alert("Por favor ingrese un correo electrónico válido");
+                 return false;
+             }
+
+            return true;
+        }
+
+        function crearRegistro() {
+            push(
+                ref(database, 'Danny_Simba'),
+                {
+                    nombre: nombreInput.value,
+                    apellido: apellidoInput.value,
+                    edad: edadInput.value,
+                    cedula: cedulaInput.value,
+                    correo: correoInput.value
+                }
+            );
+
+            limpiarFormulario();
+        }
+
+        window.actualizarRegistro = function (key) {
+            update(ref(database, `Danny_Simba/${key}`), {
+                nombre: nombreInput.value,
+                apellido: apellidoInput.value,
+                edad: edadInput.value,
+                cedula: cedulaInput.value,
+                correo: correoInput.value
+            });
+
+            limpiarFormulario();
+        }
+
+        window.eliminarRegistro = function (key) {
+            remove(ref(database, `Danny_Simba/${key}`));
+
+            limpiarFormulario();
+        }
+
+        onValue(ref(database, 'Danny_Simba'), (snapshot) => {
+            const tableBody = document.getElementById('table-body');
+            tableBody.innerHTML = "";
+
+            snapshot.forEach((childSnapshot) => {
+                const key = childSnapshot.key;
+                const data = childSnapshot.val();
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${data.nombre}</td>
+                    <td>${data.apellido}</td>
+                    <td>${data.edad}</td>
+                    <td>${data.cedula}</td>
+                    <td>${data.correo}</td>
+                    <td>
+                        <button class="btn btn-warning" onclick="llenarFormulario('${key}', '${data.nombre}', '${data.apellido}', '${data.edad}', '${data.cedula}', '${data.correo}')">Actualizar</button>
+                        <button class="btn btn-danger" onclick="eliminarRegistro('${key}')">Eliminar</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        });
+
+        window.llenarFormulario = function (key, nombre, apellido, edad, cedula, correo) {
+            nombreInput.value = nombre;
+            apellidoInput.value = apellido;
+            edadInput.value = edad;
+            cedulaInput.value = cedula;
+            correoInput.value = correo;
+            recordKeyInput.value = key;
+
+            const crearButton = document.querySelector("button[onclick='crearOActualizarRegistro()']");
+            crearButton.textContent = "Actualizar";
+            crearButton.onclick = function () {
+                actualizarRegistro(key);
+            };
+        }
+
+        function limpiarFormulario() {
+            nombreInput.value = "";
+            apellidoInput.value = "";
+            edadInput.value = "";
+            cedulaInput.value = "";
+            correoInput.value = "";
+            recordKeyInput.value = ""; // Limpiar la clave del registro
+
+            const crearButton = document.querySelector("button[onclick='crearOActualizarRegistro()']");
+            crearButton.textContent = "Guardar";
+            crearButton.onclick = function () {
+                crearOActualizarRegistro();
+            };
+        }
+    </script>
+</body>
+
+</html>

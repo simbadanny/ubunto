@@ -1,0 +1,19 @@
+#crud-form {
+    margin: 50px auto; /* Centrar vertical y horizontalmente */
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+}
+
+#crud-form label {
+    font-weight: bold;
+}
+
+#crud-form input {
+    margin-bottom: 10px;
+}
+
+#crud-form button {
+    margin-top: 10px;
+}
